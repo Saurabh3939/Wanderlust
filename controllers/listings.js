@@ -2,7 +2,7 @@ const Listing = require("../models/listings.js");
 
 module.exports.index = async (req, res) => {
   const allListings = await Listing.find({});
-  res.render("./listings/index.ejs", { allListings });
+  res.render("listings/index", { allListings });
 };
 
 module.exports.renderNewForm = (req, res) => {
@@ -22,19 +22,28 @@ module.exports.showListing = async (req, res) => {
     req.flash("error", "The Listing You Requested Does Not Exists");
     res.redirect("/listings");
   } else {
-    res.render("./listings/show.ejs", { listing });
+    res.render("listings/show.ejs", { listing });
   }
 };
 
 module.exports.createListing = async (req, res, next) => {
-  let url = req.file.path;
-  let filename = req.file.filename;
-  const newListing = new Listing(req.body.listing);
-  newListing.owner = req.user._id;
-  newListing.image = { url, filename };
-  await newListing.save();
-  req.flash("success", "New Listing Created");
-  res.redirect("/listings");
+  try {
+    const newListing = new Listing(req.body.listing);
+    console.log(req.body.listing);
+    newListing.owner = req.user._id;
+    if (typeof req.file !== "undefined") {
+      let url = req.file.path;
+      let filename = req.file.filename;
+      newListing.image = { url, filename };
+    }
+    await newListing.save();
+    req.flash("success", "New Listing Created");
+    res.redirect("/listings");
+  } catch (err) {
+    console.log("ERROR DETECTED", err);
+    console.log(err.message);
+    next(err);
+  }
 };
 
 module.exports.renderEditForm = async (req, res) => {

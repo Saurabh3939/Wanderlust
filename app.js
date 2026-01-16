@@ -19,7 +19,6 @@ const User = require("./models/user.js");
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
-const { error } = require("console");
 
 const dbUrl = process.env.ATLASDB_URL;
 
@@ -50,7 +49,7 @@ const store = MongoStore.create({
   touchAfter: 24 * 3600,
 });
 
-store.on("error", () => {
+store.on("error", (error) => {
   console.log("ERROR IN MONGO SESSION STORE", error);
 });
 
@@ -59,16 +58,12 @@ const sessionOptions = {
   secret: process.env.SECRET,
   resave: false,
   saveUninitialized: true,
-  Cookie: {
+  cookie: {
     expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
   },
 };
-
-// app.get("/", (req, res) => {
-//   res.send("Hi I Am Root");
-// });
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -91,21 +86,14 @@ app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// app.get("/demouser", async (req, res) => {
-//   let fakeUser = new User({
-//     email: "student@gmail.com",
-//     username: "student",
-//   });
-//   let registeredUser = await User.register(fakeUser, "1234");
-//   res.send(registeredUser);
-// });
-
-app.all("/{*splat}", (req, res, next) => {
+app.all("*path", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found"));
 });
 
 app.use((err, req, res, next) => {
   let { statusCode = 500, message = "SOMETHING WENT WRONG" } = err;
+  console.log("--- ACTUAL ERROR CAUSE ---");
+  console.log(err);
   res.status(statusCode).render("./listings/error.ejs", { message });
   // res.status(statusCode).send(message);
 });
